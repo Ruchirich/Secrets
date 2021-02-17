@@ -71,10 +71,13 @@ passport.use(new GoogleStrategy({
   }
 ));
 
+// Home page
 
 app.get("/", function(req, res){
   res.render("home")
 });
+
+// authentication via google
 
 app.get("/auth/google",
   passport.authenticate('google', { scope: ['profile']
@@ -87,6 +90,8 @@ app.get("/auth/google/secrets",
     res.redirect("/secrets");
 });
 
+// login route
+
 app.route("/login")
 .get(function(req, res){
   res.render("login")
@@ -94,6 +99,8 @@ app.route("/login")
 .post(passport.authenticate("local"), function(req, res){
   res.redirect("/secrets");
 });
+
+// Register route
 
 app.route("/register")
 .get(function(req, res){
@@ -114,6 +121,7 @@ app.route("/register")
 
 });
 
+// Secrets Page
 
 app.get("/secrets", function(req, res){
   User.find({"secret": {$ne: null}}, function(err,foundUser) {
@@ -126,6 +134,8 @@ app.get("/secrets", function(req, res){
     }
   })
 });
+
+// Submit route
 
 app.route("/submit")
 .get(function(req, res){
@@ -143,7 +153,7 @@ app.route("/submit")
       console.log(err);
     } else {
       if (foundUser){
-        foundUser.secret = submittedSecret;
+        foundUser.secret.push(req.body.secret);
         foundUser.save(function(){
           res.redirect("/secrets");
         });
@@ -151,6 +161,25 @@ app.route("/submit")
     }
   });
 });
+
+// Deleting posts
+
+app.post("/submit/delete", function(req, res){
+  if(req.isAuthenticated()){
+    User.findById(req.user.id, function(err, foundUser){
+      foundUser.secret.splice(foundUser.secret.indexOf(req.body.secret), 1);
+      foundUser.save(function (err) {
+        if(!err){
+          res.redirect("/submit")
+        }
+      });
+    })
+  } else {
+    res.redirect("/login");
+  }
+});
+
+// Logout route
 
 app.get("/logout", function(req, res){
   req.logout();
